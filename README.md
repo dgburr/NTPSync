@@ -4,6 +4,8 @@ I needed NTP in one of my projects, and I found this old NTPSync app which was n
 
 Please note that NTP works only on rooted devices. If your device is not rooted, this code WILL NOT work on your device.
 
+This code was used on Android M. Since then Android has introduced many new security changes and it might not work on later versions. The android.permission-group.SYSTEM_TOOLS and android.permission-group.NETWORK persmissions are commented out because they cause `Installation did not succeed` error on a non-rooted phone. You can uncomment these lines to install on a rooted phone.  
+
 
 # Installing
 
