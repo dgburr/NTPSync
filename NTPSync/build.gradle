@@ -2,15 +2,14 @@ apply plugin: 'android'
 
 dependencies {
     //noinspection GradleCompatible
-    compile 'com.android.support:support-v4:24.2.1'
-    compile project(':libraries:Donations')
-    compile project(':libraries:HtmlTextView')
-    compile project(':libraries:RootCommands')
+    implementation 'com.android.support:support-v4:24.2.1'
+    implementation project(':libraries:Donations')
+    implementation project(':libraries:HtmlTextView')
+    implementation project(':libraries:RootCommands')
 }
 
 android {
     compileSdkVersion 32
-    buildToolsVersion "24.0.3"
 
     useLibrary 'org.apache.http.legacy'
 

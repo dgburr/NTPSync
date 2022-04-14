@@ -11,12 +11,11 @@ apply plugin: 'com.android.library'
 
 dependencies {
     //noinspection GradleCompatible
-    compile 'com.android.support:support-v4:24.2.1'
+    implementation 'com.android.support:support-v4:24.2.1'
 }
 
 android {
     compileSdkVersion 32
-    buildToolsVersion "24.0.3"
 
     defaultConfig {
         minSdkVersion 9
