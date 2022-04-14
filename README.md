@@ -9,7 +9,7 @@ This code was used on Android M. Since then Android has introduced many new secu
 
 # Installing
 
-All you need is to open this app as a new project in Android Studio and open the build.gradle file. If Android Studio is up-to-date and it has build-tool 24.x installed, it'll compile this project and it'll be ready for your use.
+All you need is to open this app as a new project in Android Studio. It has been updated to used SDK 32 and tested for successful built in April 2022 with Android Studio Bumblebee 2021.1.1 Patch 2.
 
 # Coding Style
 
