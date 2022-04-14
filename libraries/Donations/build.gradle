@@ -10,16 +10,17 @@ buildscript {
 apply plugin: 'com.android.library'
 
 dependencies {
-    compile 'com.android.support:support-v4:24.2.0'
+    //noinspection GradleCompatible
+    compile 'com.android.support:support-v4:24.2.1'
 }
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.1"
+    compileSdkVersion 32
+    buildToolsVersion "24.0.3"
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 24
+        targetSdkVersion 32
     }
 }
 

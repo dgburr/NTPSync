@@ -10,14 +10,14 @@ buildscript {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.1"
+    compileSdkVersion 32
+    buildToolsVersion "24.0.3"
 
     useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 24
+        targetSdkVersion 32
     }
 }
 
