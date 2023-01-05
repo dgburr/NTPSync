@@ -21,9 +21,6 @@
 package org.ntpsync.util;
 
 public class Constants {
-
-    public static final boolean DEBUG_DISABLE_ROOT_CHECK = false;
-
     public static final String TAG = "NTPSync";
     public static final String PREFS_NAME = "preferences";
 

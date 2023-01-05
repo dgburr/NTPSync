@@ -20,23 +20,6 @@
     <!-- Used by Koush's new Superuser app -->
     <uses-permission android:name="android.permission.ACCESS_SUPERUSER" />
 
-
-<!--    Uncomment these permissions on a rooted phone. No guarantee for it to work on Android M
-        and above due to hardware changes and new security features introduced in Android  -->
-
-<!--    <permission-->
-<!--        android:name="org.ntpsync.permission.GET_TIME"-->
-<!--        android:description="@string/permission_get_time_description"-->
-<!--        android:label="@string/permission_get_time_label"-->
-<!--        android:permissionGroup="android.permission-group.NETWORK"-->
-<!--        android:protectionLevel="dangerous" />-->
-<!--    <permission-->
-<!--        android:name="org.ntpsync.permission.SET_TIME"-->
-<!--        android:description="@string/permission_set_time_description"-->
-<!--        android:label="@string/permission_set_time_label"-->
-<!--        android:permissionGroup="android.permission-group.SYSTEM_TOOLS"-->
-<!--        android:protectionLevel="dangerous" />-->
-
     <application
         android:name="NTPSyncApplication"
         android:icon="@drawable/icon"

@@ -38,9 +38,6 @@ import android.os.RemoteException;
  */
 public class NtpSyncRemoteService extends Service {
 
-    public static final String PERMISSION_GET_TIME = "org.ntpsync.permission.GET_TIME";
-    public static final String PERMISSION_SET_TIME = "org.ntpsync.permission.SET_TIME";
-
     public static final String OUTPUT_OFFSET = "offset";
 
     @Override
@@ -69,33 +66,23 @@ public class NtpSyncRemoteService extends Service {
         public int getOffset(String ntpHostname, Bundle output) throws RemoteException {
             Log.d(Constants.TAG, "getOffset called!");
 
-            // check permission to do this
-            if (checkCallingPermission(PERMISSION_GET_TIME) == PackageManager.PERMISSION_GRANTED) {
-                Log.d(Constants.TAG, "Permission granted (GET_TIME)!");
-
-                // get hostname from prefs if not defined
-                if (ntpHostname == null) {
-                    ntpHostname = PreferenceHelper.getNtpServer(NtpSyncRemoteService.this);
-                }
-
-                int returnMessage;
-                try {
-                    long offset = NtpSyncUtils.query(ntpHostname);
-
-                    output.putLong(OUTPUT_OFFSET, offset);
-
-                    returnMessage = NtpSyncService.RETURN_OKAY;
-                } catch (Exception e) {
-                    returnMessage = NtpSyncService.RETURN_SERVER_TIMEOUT;
-                }
-
-                return returnMessage;
-            } else {
-                Log.e(Constants.TAG, "Permission to get time is missing! You need "
-                        + PERMISSION_GET_TIME);
-
-                return NtpSyncService.RETURN_GENERIC_ERROR;
+            // get hostname from prefs if not defined
+            if (ntpHostname == null) {
+                ntpHostname = PreferenceHelper.getNtpServer(NtpSyncRemoteService.this);
             }
+
+            int returnMessage;
+            try {
+                long offset = NtpSyncUtils.query(ntpHostname);
+
+                output.putLong(OUTPUT_OFFSET, offset);
+
+                returnMessage = NtpSyncService.RETURN_OKAY;
+            } catch (Exception e) {
+                returnMessage = NtpSyncService.RETURN_SERVER_TIMEOUT;
+            }
+
+            return returnMessage;
         }
 
         /**
@@ -105,33 +92,23 @@ public class NtpSyncRemoteService extends Service {
         public int setTime(String ntpHostname, Bundle output) throws RemoteException {
             Log.d(Constants.TAG, "setTime called!");
 
-            // check permission to do this
-            if (checkCallingPermission(PERMISSION_SET_TIME) == PackageManager.PERMISSION_GRANTED) {
-                Log.d(Constants.TAG, "Permission granted (SET_TIME)!");
-
-                // get hostname from prefs if not defined
-                if (ntpHostname == null) {
-                    ntpHostname = PreferenceHelper.getNtpServer(NtpSyncRemoteService.this);
-                }
-
-                int returnMessage;
-                try {
-                    long offset = NtpSyncUtils.query(ntpHostname);
-
-                    output.putLong(OUTPUT_OFFSET, offset);
-
-                    returnMessage = Utils.setTime(offset);
-                } catch (Exception e) {
-                    returnMessage = NtpSyncService.RETURN_SERVER_TIMEOUT;
-                }
-
-                return returnMessage;
-            } else {
-                Log.e(Constants.TAG, "Permission to set time is missing! You need "
-                        + PERMISSION_SET_TIME);
-
-                return NtpSyncService.RETURN_GENERIC_ERROR;
+            // get hostname from prefs if not defined
+            if (ntpHostname == null) {
+                ntpHostname = PreferenceHelper.getNtpServer(NtpSyncRemoteService.this);
             }
+
+            int returnMessage;
+            try {
+                long offset = NtpSyncUtils.query(ntpHostname);
+
+                output.putLong(OUTPUT_OFFSET, offset);
+
+                returnMessage = Utils.setTime(offset);
+            } catch (Exception e) {
+                returnMessage = NtpSyncService.RETURN_SERVER_TIMEOUT;
+            }
+
+            return returnMessage;
         }
     };
 
