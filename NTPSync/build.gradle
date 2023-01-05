@@ -1,26 +1,21 @@
-apply plugin: 'android'
+apply plugin: 'com.android.application'
 
 dependencies {
-    compile 'com.android.support:support-v4:18.0.+'
-    compile 'org.sufficientlysecure:donations:2.4'
-    compile 'org.sufficientlysecure:html-textview:2.0'
-    compile project(':libraries:RootCommands')
+    //noinspection GradleCompatible
+    implementation 'com.android.support:support-v4:24.2.1'
+    implementation 'org.sufficientlysecure:donations:2.4'
+    implementation 'org.sufficientlysecure:html-textview:2.0'
+    implementation project(':libraries:RootCommands')
 }
 
 android {
-    compileSdkVersion 17
-    buildToolsVersion "25.0.0"
+    compileSdkVersion 32
+
+    useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
-        minSdkVersion 7
-        targetSdkVersion 17
-    }
-
-    lintOptions {
-        checkReleaseBuilds false
-        // Or, if you prefer, you can continue to check for errors in release builds,
-        // but continue the build even when errors are found:
-        abortOnError false
+        minSdkVersion 9
+        targetSdkVersion 32
     }
 
     /*
@@ -36,7 +31,7 @@ android {
             project.hasProperty('signingKeyAlias') &&
             project.hasProperty('signingKeyPassword')) {
         println "Found sign properties in gradle.properties! Signing build…"
-
+        
         signingConfigs {
             release {
                 storeFile file(signingStoreLocation)
@@ -49,14 +44,5 @@ android {
         buildTypes.release.signingConfig = signingConfigs.release
     } else {
         buildTypes.release.signingConfig = null
-    }
-
-    productFlavors {
-        google {
-            buildConfigField "boolean", "DONATIONS_GOOGLE", "true"
-        }
-        fdroid {
-            buildConfigField "boolean", "DONATIONS_GOOGLE", "false"
-        }
     }
 }
