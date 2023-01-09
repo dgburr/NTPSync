@@ -31,13 +31,22 @@ package org.ntpsync.service;
  */
 interface INtpSyncRemoteService {
     /**
-     * Gets current time offset from NTP server.
+     * Gets current system time offset from NTP server in milliseconds.
      * If ntpHostname is null the NTP server from NTPSync preferences is used
      *
      * Bundle output contains only one key-value pair:
      * type: Long, Key: offset
      */
-    int getOffset(in String ntpHostname, out Bundle output);
+    int getSystemTimeOffset(in String ntpHostname, out Bundle output);
+
+    /**
+     * Gets elapsed real time offset from NTP server in nanoseconds.
+     * If ntpHostname is null the NTP server from NTPSync preferences is used
+     *
+     * Bundle output contains only one key-value pair:
+     * type: Double, Key: offset
+     */
+    int getElapsedTimeOffset(in String ntpHostname, out Bundle output);
     
     /**
      * Sets the time queried from a NTP server as the Android system time.

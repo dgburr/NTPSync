@@ -44,17 +44,21 @@ import java.util.TimeZone;
  */
 public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
 {
+    public static final long NS_PER_MS = 1000000;
+    public static final long NS_PER_SEC = 1000000000;
     private static final long serialVersionUID = 8139806907588338737L;
 
     /**
      * baseline NTP time if bit-0=0 -> 7-Feb-2036 @ 06:28:16 UTC
      */
-    protected static final long msb0baseTime = 2085978496000L;
+    protected static final long msb0baseTimeMs = 2085978496000L;
+    protected static final long msb0baseTimeNs = msb0baseTimeMs * NS_PER_MS;
 
     /**
      *  baseline NTP time if bit-0=1 -> 1-Jan-1900 @ 01:00:00 UTC
      */
-    protected static final long msb1baseTime = -2208988800000L;
+    protected static final long msb1baseTimeMs = -2208988800000L;
+    protected static final long msb1baseTimeNs = msb1baseTimeMs * NS_PER_MS;
 
     /**
      * Default NTP date string format. E.g. Fri, Sep 12 2003 21:06:23.860.
@@ -79,10 +83,10 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
         Calendar calendar = Calendar.getInstance(utcZone);
         calendar.set(1900, Calendar.JANUARY, 1, 0, 0, 0);
         calendar.set(Calendar.MILLISECOND, 0);
-        msb1baseTime = calendar.getTime().getTime();
+        msb1baseTimeMs = calendar.getTime().getTime();
         calendar.set(2036, Calendar.FEBRUARY, 7, 6, 28, 16);
         calendar.set(Calendar.MILLISECOND, 0);
-        msb0baseTime = calendar.getTime().getTime();
+        msb0baseTimeMs = calendar.getTime().getTime();
     }
     */
 
@@ -115,7 +119,7 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
      */
     public TimeStamp(Date d)
     {
-        ntpTime = (d == null) ? 0 : toNtpTime(d.getTime());
+        ntpTime = (d == null) ? 0 : millisToNtpTime(d.getTime());
     }
 
     /***
@@ -149,13 +153,13 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
     }
 
     /***
-     * Convert NTP timestamp to Java standard time.
+     * Convert NTP timestamp to nanoseconds since epoch
      *
-     * @return NTP Timestamp in Java time
+     * @return NTP Timestamp in nanoseconds
      */
-    public long getTime()
+    public long getNanos()
     {
-        return getTime(ntpTime);
+        return getTimeNanos(ntpTime);
     }
 
     /***
@@ -165,7 +169,7 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
      */
     public Date getDate()
     {
-        long time = getTime(ntpTime);
+        long time = getTimeMillis(ntpTime);
         return new Date(time);
     }
 
@@ -182,7 +186,7 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
      * @return the number of milliseconds since January 1, 1970, 00:00:00 GMT
      * represented by this NTP timestamp value.
      */
-    public static long getTime(long ntpTimeValue)
+    public static long getTimeMillis(long ntpTimeValue)
     {
         long seconds = (ntpTimeValue >>> 32) & 0xffffffffL;     // high-order 32-bits
         long fraction = ntpTimeValue & 0xffffffffL;             // low-order 32-bits
@@ -202,38 +206,70 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
         long msb = seconds & 0x80000000L;
         if (msb == 0) {
             // use base: 7-Feb-2036 @ 06:28:16 UTC
-            return msb0baseTime + (seconds * 1000) + fraction;
+            return msb0baseTimeMs + (seconds * 1000) + fraction;
         } else {
             // use base: 1-Jan-1900 @ 01:00:00 UTC
-            return msb1baseTime + (seconds * 1000) + fraction;
+            return msb1baseTimeMs + (seconds * 1000) + fraction;
         }
     }
 
     /***
-     * Helper method to convert Java time to NTP timestamp object.
+     * Convert 64-bit NTP timestamp to nanoseconds since epoch.
+     *
+     * @param ntpTimeValue
+     * @return the number of nanoseconds since January 1, 1970, 00:00:00 GMT
+     * represented by this NTP timestamp value.
+     */
+    public static long getTimeNanos(long ntpTimeValue)
+    {
+        long seconds = (ntpTimeValue >>> 32) & 0xffffffffL;     // high-order 32-bits
+        long fraction = ntpTimeValue & 0xffffffffL;             // low-order 32-bits
+
+        // Use round-off on fractional part to preserve going to lower precision
+        fraction = Math.round((double)NS_PER_SEC * fraction / 0x100000000L);
+
+        /*
+         * If the most significant bit (MSB) on the seconds field is set we use
+         * a different time base. The following text is a quote from RFC-2030 (SNTP v4):
+         *
+         *  If bit 0 is set, the UTC time is in the range 1968-2036 and UTC time
+         *  is reckoned from 0h 0m 0s UTC on 1 January 1900. If bit 0 is not set,
+         *  the time is in the range 2036-2104 and UTC time is reckoned from
+         *  6h 28m 16s UTC on 7 February 2036.
+         */
+        long msb = seconds & 0x80000000L;
+        if (msb == 0) {
+            // use base: 7-Feb-2036 @ 06:28:16 UTC
+            return msb0baseTimeNs + (seconds * NS_PER_SEC) + fraction;
+        } else {
+            // use base: 1-Jan-1900 @ 01:00:00 UTC
+            return msb1baseTimeNs + (seconds * NS_PER_SEC) + fraction;
+        }
+    }
+
+    /***
+     * Helper method to convert Millisecond time to NTP timestamp object.
      * Note that Java time (milliseconds) by definition has less precision
      * then NTP time (picoseconds) so converting Ntptime to Javatime and back
      * to Ntptime loses precision. For example, Tue, Dec 17 2002 09:07:24.810
      * is represented by a single Java-based time value of f22cd1fc8a, but its
      * NTP equivalent are all values from c1a9ae1c.cf5c28f5 to c1a9ae1c.cf9db22c.
-     * @param   date   the milliseconds since January 1, 1970, 00:00:00 GMT.
+     * @param   time   milliseconds since January 1, 1970, 00:00:00 GMT.
      * @return NTP timestamp object at the specified date.
      */
-    public static TimeStamp getNtpTime(long date)
+    public static TimeStamp getNtpTimeFromMillis(long millis)
     {
-        return new TimeStamp(toNtpTime(date));
+        return new TimeStamp(millisToNtpTime(millis));
     }
 
     /***
-     * Constructs a NTP timestamp object and initializes it so that
-     * it represents the time at which it was allocated, measured to the
-     * nearest millisecond.
-     * @return NTP timestamp object set to the current time.
-     * @see     java.lang.System#currentTimeMillis()
+     * Helper method to convert Nanosecond time to NTP timestamp object.
+     * @param   time   nanoseconds since January 1, 1970, 00:00:00 GMT.
+     * @return NTP timestamp object at the specified date.
      */
-    public static TimeStamp getCurrentTime()
+    public static TimeStamp getNtpTimeFromNanos(long nanos)
     {
-        return getNtpTime(System.currentTimeMillis());
+        return new TimeStamp(nanosToNtpTime(nanos));
     }
 
     /***
@@ -276,27 +312,55 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
     }
 
     /***
-     * Converts Java time to 64-bit NTP time representation.
+     * Converts Millisecond time to 64-bit NTP time representation.
      *
-     * @param t Java time
-     * @return NTP timestamp representation of Java time value.
+     * @param t Time in milliseconds
+     * @return NTP timestamp representation of time value.
      */
-    protected static long toNtpTime(long t)
+    protected static long millisToNtpTime(long t)
     {
-        boolean useBase1 = t < msb0baseTime;    // time < Feb-2036
+        boolean useBase1 = t < msb0baseTimeMs;    // time < Feb-2036
         long baseTime;
         if (useBase1) {
-            baseTime = t - msb1baseTime; // dates <= Feb-2036
+            baseTime = t - msb1baseTimeMs; // dates <= Feb-2036
         } else {
             // if base0 needed for dates >= Feb-2036
-            baseTime = t - msb0baseTime;
+            baseTime = t - msb0baseTimeMs;
         }
 
         long seconds = baseTime / 1000;
         long fraction = ((baseTime % 1000) * 0x100000000L) / 1000;
 
         if (useBase1) {
-            seconds |= 0x80000000L; // set high-order bit if msb1baseTime 1900 used
+            seconds |= 0x80000000L; // set high-order bit if msb1baseTimeMs 1900 used
+        }
+
+        long time = seconds << 32 | fraction;
+        return time;
+    }
+
+    /***
+     * Converts Nanosecond time to 64-bit NTP time representation.
+     *
+     * @param t Time in nanoseconds
+     * @return NTP timestamp representation of time value.
+     */
+    protected static long nanosToNtpTime(long t)
+    {
+        boolean useBase1 = t < msb0baseTimeNs;
+        long baseTime;
+        if (useBase1) {
+            baseTime = t - msb1baseTimeNs; // dates <= Feb-2036
+        } else {
+            // if base0 needed for dates >= Feb-2036
+            baseTime = t - msb0baseTimeNs;
+        }
+
+        long seconds = baseTime / NS_PER_SEC;
+        long fraction = ((baseTime % NS_PER_SEC) * 0x100000000L) / NS_PER_SEC;
+
+        if (useBase1) {
+            seconds |= 0x80000000L; // set high-order bit if msb1baseTimeNs 1900 used
         }
 
         long time = seconds << 32 | fraction;

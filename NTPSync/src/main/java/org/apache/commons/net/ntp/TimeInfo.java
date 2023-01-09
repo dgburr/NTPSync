@@ -32,13 +32,13 @@ public class TimeInfo {
 
     private final NtpV3Packet _message;
     private List<String> _comments;
-    private Long _delay;
-    private Long _offset;
+    private Double _delay; // nanoseconds
+    private Double _offset; // nanoseconds
 
     /**
      * time at which time message packet was received by local machine
      */
-    private final long _returnTime;
+    private final TimeStamp _returnTime;
 
     /**
      * flag indicating that the TimeInfo details was processed and delay/offset were computed
@@ -52,7 +52,7 @@ public class TimeInfo {
      * @param returnTime  destination receive time
      * @throws IllegalArgumentException if message is null
      */
-    public TimeInfo(NtpV3Packet message, long returnTime) {
+    public TimeInfo(NtpV3Packet message, TimeStamp returnTime) {
         this(message, returnTime, null, true);
     }
 
@@ -64,7 +64,7 @@ public class TimeInfo {
      * @param comments List of errors/warnings identified during processing
      * @throws IllegalArgumentException if message is null
      */
-    public TimeInfo(NtpV3Packet message, long returnTime, List<String> comments)
+    public TimeInfo(NtpV3Packet message, TimeStamp returnTime, List<String> comments)
     {
             this(message, returnTime, comments, true);
     }
@@ -80,7 +80,7 @@ public class TimeInfo {
      * @param doComputeDetails  flag to pre-compute delay/offset values
      * @throws IllegalArgumentException if message is null
      */
-    public TimeInfo(NtpV3Packet msgPacket, long returnTime, boolean doComputeDetails)
+    public TimeInfo(NtpV3Packet msgPacket, TimeStamp returnTime, boolean doComputeDetails)
     {
             this(msgPacket, returnTime, null, doComputeDetails);
     }
@@ -97,7 +97,7 @@ public class TimeInfo {
      * @param doComputeDetails  flag to pre-compute delay/offset values
      * @throws IllegalArgumentException if message is null
      */
-    public TimeInfo(NtpV3Packet message, long returnTime, List<String> comments,
+    public TimeInfo(NtpV3Packet message, TimeStamp returnTime, List<String> comments,
                    boolean doComputeDetails)
     {
         if (message == null) {
@@ -140,16 +140,20 @@ public class TimeInfo {
             _comments = new ArrayList<String>();
         }
 
+        // Originate Time is local time received by server (t1)
         TimeStamp origNtpTime = _message.getOriginateTimeStamp();
-        long origTime = origNtpTime.getTime();
+        double origTime = origNtpTime.getNanos();
 
         // Receive Time is time request received by server (t2)
         TimeStamp rcvNtpTime = _message.getReceiveTimeStamp();
-        long rcvTime = rcvNtpTime.getTime();
+        double rcvTime = rcvNtpTime.getNanos();
 
         // Transmit time is time reply sent by server (t3)
         TimeStamp xmitNtpTime = _message.getTransmitTimeStamp();
-        long xmitTime = xmitNtpTime.getTime();
+        double xmitTime = xmitNtpTime.getNanos();
+
+        // Destination Time is local time of transmission (t4)
+        double destTime = _returnTime.getNanos();
 
         /*
          * Round-trip network delay and local clock offset (or time drift) is calculated
@@ -173,7 +177,7 @@ public class TimeInfo {
             // might be via a broadcast NTP packet...
             if (xmitNtpTime.ntpValue() != 0)
             {
-                _offset = Long.valueOf(xmitTime - _returnTime);
+                _offset = Double.valueOf(xmitTime - destTime);
                 _comments.add("Error: zero orig time -- cannot compute delay");
             } else {
                 _comments.add("Error: zero orig time -- cannot compute delay/offset");
@@ -181,12 +185,12 @@ public class TimeInfo {
         } else if (rcvNtpTime.ntpValue() == 0 || xmitNtpTime.ntpValue() == 0) {
             _comments.add("Warning: zero rcvNtpTime or xmitNtpTime");
             // assert destTime >= origTime since network delay cannot be negative
-            if (origTime > _returnTime) {
+            if (origTime > destTime) {
                 _comments.add("Error: OrigTime > DestRcvTime");
             } else {
                 // without receive or xmit time cannot figure out processing time
                 // so delay is simply the network travel time
-                _delay = Long.valueOf(_returnTime - origTime);
+                _delay = Double.valueOf(destTime - origTime);
             }
             // TODO: is offset still valid if rcvNtpTime=0 || xmitNtpTime=0 ???
             // Could always hash origNtpTime (sendTime) but if host doesn't set it
@@ -195,15 +199,15 @@ public class TimeInfo {
             if (rcvNtpTime.ntpValue() != 0)
             {
                 // xmitTime is 0 just use rcv time
-                _offset = Long.valueOf(rcvTime - origTime);
+                _offset = Double.valueOf(rcvTime - origTime);
             } else if (xmitNtpTime.ntpValue() != 0)
             {
                 // rcvTime is 0 just use xmitTime time
-                _offset = Long.valueOf(xmitTime - _returnTime);
+                _offset = Double.valueOf(xmitTime - destTime);
             }
         } else
         {
-             long delayValue = _returnTime - origTime;
+             double delayValue = destTime - origTime;
              // assert xmitTime >= rcvTime: difference typically < 1ms
              if (xmitTime < rcvTime)
              {
@@ -212,35 +216,15 @@ public class TimeInfo {
              } else
              {
                  // subtract processing time from round-trip network delay
-                 long delta = xmitTime - rcvTime;
-                 // in normal cases the processing delta is less than
-                 // the total roundtrip network travel time.
-                 if (delta <= delayValue)
-                 {
-                     delayValue -= delta; // delay = (t4 - t1) - (t3 - t2)
-                 } else
-                 {
-                     // if delta - delayValue == 1 ms then it's a round-off error
-                     // e.g. delay=3ms, processing=4ms
-                     if (delta - delayValue == 1)
-                     {
-                         // delayValue == 0 -> local clock saw no tick change but destination clock did
-                         if (delayValue != 0)
-                         {
-                             _comments.add("Info: processing time > total network time by 1 ms -> assume zero delay");
-                             delayValue = 0;
-                         }
-                     } else {
-                        _comments.add("Warning: processing time > total network time");
-                    }
-                 }
+                 double delta = xmitTime - rcvTime;
+                 delayValue -= delta; // delay = (t4 - t1) - (t3 - t2)
              }
-             _delay = Long.valueOf(delayValue);
-            if (origTime > _returnTime) {
+             _delay = Double.valueOf(delayValue);
+            if (origTime > destTime) {
                 _comments.add("Error: OrigTime > DestRcvTime");
             }
 
-            _offset = Long.valueOf(((rcvTime - origTime) + (xmitTime - _returnTime)) / 2);
+            _offset = Double.valueOf(((rcvTime - origTime) + (xmitTime - destTime)) / 2);
         }
     }
 
@@ -255,22 +239,23 @@ public class TimeInfo {
     }
 
     /**
-     * Get round-trip network delay. If null then could not compute the delay.
+     * Get round-trip network delay in nanoseconds.
+     * If null then could not compute the delay.
      *
-     * @return Long or null if delay not available.
+     * @return Double or null if delay not available.
      */
-    public Long getDelay()
+    public Double getDelay()
     {
         return _delay;
     }
 
     /**
-     * Get clock offset needed to adjust local clock to match remote clock. If null then could not
-     * compute the offset.
+     * Get clock offset needed to adjust local clock to match remote clock in nanoseconds.
+     * If null then could not compute the offset.
      *
-     * @return Long or null if offset not available.
+     * @return Double or null if offset not available.
      */
-    public Long getOffset()
+    public Double getOffset()
     {
         return _offset;
     }
@@ -290,7 +275,7 @@ public class TimeInfo {
      *
      * @return packet return time.
      */
-    public long getReturnTime()
+    public TimeStamp getReturnTime()
     {
         return _returnTime;
     }

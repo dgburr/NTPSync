@@ -55,10 +55,12 @@ public final class NTPUDPClient extends DatagramSocketClient
      * <p>
      * @param host The address of the server.
      * @param port The port of the service.
+     * @param elapsedTime: if true, calculate offset for elapsed real time
+     *                     if false, calculate offset for system time
      * @return The time value retrieved from the server.
      * @exception IOException If an error occurs while retrieving the time.
      ***/
-    public TimeInfo getTime(InetAddress host, int port) throws IOException
+    public TimeInfo getTime(InetAddress host, int port, boolean elapsedTime) throws IOException
     {
         // if not connected then open to next available UDP port
         if (!isOpen())
@@ -82,7 +84,12 @@ public final class NTPUDPClient extends DatagramSocketClient
          * introduces an error in the delay time.
          * No extraneous logging and initializations here !!!
          */
-        TimeStamp now = TimeStamp.getCurrentTime();
+        TimeStamp now;
+        if (elapsedTime) {
+            now = TimeStamp.getNtpTimeFromNanos(System.nanoTime());
+        } else {
+            now = TimeStamp.getNtpTimeFromMillis(System.currentTimeMillis());
+        }
 
         // Note that if you do not set the transmit time field then originating time
         // in server response is all 0's which is "Thu Feb 07 01:28:16 EST 2036".
@@ -91,7 +98,12 @@ public final class NTPUDPClient extends DatagramSocketClient
         _socket_.send(sendPacket);
         _socket_.receive(receivePacket);
 
-        long returnTime = System.currentTimeMillis();
+        TimeStamp returnTime;
+        if (elapsedTime) {
+            returnTime = TimeStamp.getNtpTimeFromNanos(System.nanoTime());
+        } else {
+            returnTime = TimeStamp.getNtpTimeFromMillis(System.currentTimeMillis());
+        }
         // create TimeInfo message container but don't pre-compute the details yet
         TimeInfo info = new TimeInfo(recMessage, returnTime, false);
 
@@ -106,12 +118,14 @@ public final class NTPUDPClient extends DatagramSocketClient
      * object that allows access to all the fields of the NTP message header.
      * <p>
      * @param host The address of the server.
+     * @param elapsedTime: if true, calculate offset for elapsed real time
+     *                     if false, calculate offset for system time
      * @return The time value retrieved from the server.
      * @exception IOException If an error occurs while retrieving the time.
      ***/
-    public TimeInfo getTime(InetAddress host) throws IOException
+    public TimeInfo getTime(InetAddress host, boolean elapsedTime) throws IOException
     {
-        return getTime(host, NtpV3Packet.NTP_PORT);
+        return getTime(host, NtpV3Packet.NTP_PORT, elapsedTime);
     }
 
     /***

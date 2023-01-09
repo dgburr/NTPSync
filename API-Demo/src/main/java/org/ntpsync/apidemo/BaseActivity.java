@@ -155,7 +155,7 @@ public class BaseActivity extends PreferenceActivity {
 
                 try {
                     Bundle output = new Bundle();
-                    result = mNtpSyncService.getOffset(null, output);
+                    result = mNtpSyncService.getSystemTimeOffset(null, output);
 
                     offset = output.getLong(OUTPUT_OFFSET);
 

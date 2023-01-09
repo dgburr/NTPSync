@@ -60,11 +60,11 @@ public class NtpSyncRemoteService extends Service {
 
     private final INtpSyncRemoteService.Stub mBinder = new INtpSyncRemoteService.Stub() {
         /**
-         * Implementation of getOffset
+         * Implementation of getSystemTimeOffset
          */
         @Override
-        public int getOffset(String ntpHostname, Bundle output) throws RemoteException {
-            Log.d(Constants.TAG, "getOffset called!");
+        public int getSystemTimeOffset(String ntpHostname, Bundle output) throws RemoteException {
+            Log.d(Constants.TAG, "getSystemTimeOffset called!");
 
             // get hostname from prefs if not defined
             if (ntpHostname == null) {
@@ -73,9 +73,35 @@ public class NtpSyncRemoteService extends Service {
 
             int returnMessage;
             try {
-                long offset = NtpSyncUtils.query(ntpHostname);
+                long offset = NtpSyncUtils.querySystemTime(ntpHostname);
 
                 output.putLong(OUTPUT_OFFSET, offset);
+
+                returnMessage = NtpSyncService.RETURN_OKAY;
+            } catch (Exception e) {
+                returnMessage = NtpSyncService.RETURN_SERVER_TIMEOUT;
+            }
+
+            return returnMessage;
+        }
+
+        /**
+         * Implementation of getElapsedTimeOffset
+         */
+        @Override
+        public int getElapsedTimeOffset(String ntpHostname, Bundle output) throws RemoteException {
+            Log.d(Constants.TAG, "getElapsedTimeOffset called!");
+
+            // get hostname from prefs if not defined
+            if (ntpHostname == null) {
+                ntpHostname = PreferenceHelper.getNtpServer(NtpSyncRemoteService.this);
+            }
+
+            int returnMessage;
+            try {
+                double offset = NtpSyncUtils.queryElapsedRealTime(ntpHostname);
+
+                output.putDouble(OUTPUT_OFFSET, offset);
 
                 returnMessage = NtpSyncService.RETURN_OKAY;
             } catch (Exception e) {
@@ -99,7 +125,7 @@ public class NtpSyncRemoteService extends Service {
 
             int returnMessage;
             try {
-                long offset = NtpSyncUtils.query(ntpHostname);
+                long offset = NtpSyncUtils.querySystemTime(ntpHostname);
 
                 output.putLong(OUTPUT_OFFSET, offset);
 
