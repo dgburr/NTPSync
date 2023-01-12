@@ -19,6 +19,7 @@ package org.apache.commons.net.ntp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Wrapper class to network time packet messages (NTP, etc) that computes
@@ -207,19 +208,19 @@ public class TimeInfo {
             }
         } else
         {
-             double delayValue = destTime - origTime;
-             // assert xmitTime >= rcvTime: difference typically < 1ms
-             if (xmitTime < rcvTime)
-             {
+            double delayValue = destTime - origTime;
+            // assert xmitTime >= rcvTime: difference typically < 1ms
+            if (xmitTime < rcvTime)
+            {
                  // server cannot send out a packet before receiving it...
-                 _comments.add("Error: xmitTime < rcvTime"); // time-travel not allowed
-             } else
-             {
+                _comments.add("Error: xmitTime < rcvTime"); // time-travel not allowed
+            } else
+            {
                  // subtract processing time from round-trip network delay
                  double delta = xmitTime - rcvTime;
                  delayValue -= delta; // delay = (t4 - t1) - (t3 - t2)
-             }
-             _delay = Double.valueOf(delayValue);
+            }
+            _delay = Double.valueOf(delayValue);
             if (origTime > destTime) {
                 _comments.add("Error: OrigTime > DestRcvTime");
             }
@@ -239,12 +240,40 @@ public class TimeInfo {
     }
 
     /**
+     * Get round-trip network delay in milliseconds.
+     * If null then could not compute the delay.
+     *
+     * @return Long or null if delay not available.
+     */
+    public Long getDelayMs()
+    {
+        if (_delay == null) {
+            return null;
+        }
+        return TimeUnit.MILLISECONDS.convert(Math.round(_delay), TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * Get clock offset needed to adjust local clock to match remote clock in milliseconds.
+     * If null then could not compute the offset.
+     *
+     * @return Long or null if offset not available.
+     */
+    public Long getOffsetMs()
+    {
+        if (_offset == null) {
+            return null;
+        }
+        return TimeUnit.MILLISECONDS.convert(Math.round(_offset), TimeUnit.NANOSECONDS);
+    }
+
+    /**
      * Get round-trip network delay in nanoseconds.
      * If null then could not compute the delay.
      *
      * @return Double or null if delay not available.
      */
-    public Double getDelay()
+    public Double getDelayNs()
     {
         return _delay;
     }
@@ -255,7 +284,7 @@ public class TimeInfo {
      *
      * @return Double or null if offset not available.
      */
-    public Double getOffset()
+    public Double getOffsetNs()
     {
         return _offset;
     }

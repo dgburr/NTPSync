@@ -22,7 +22,6 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.text.NumberFormat;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.NtpUtils;
@@ -153,10 +152,10 @@ public class NtpSyncUtils {
                 + "</b><br/>" + destNtpTime.toDateString() + "</p>";
 
         info.computeDetails(); // compute offset/delay if not already done
-        Double offsetValue = info.getOffset();
-        String offset = offsetValue != null? String.valueOf(TimeUnit.MILLISECONDS.convert(Math.round(offsetValue), TimeUnit.NANOSECONDS)): "N/A";
-        Double delayValue = info.getDelay();
-        String delay = delayValue != null? String.valueOf(TimeUnit.MILLISECONDS.convert(Math.round(delayValue), TimeUnit.NANOSECONDS)): "N/A";
+        Long offsetValue = info.getOffsetMs();
+        String offset = offsetValue != null? String.valueOf(offsetValue): "N/A";
+        Long delayValue = info.getDelayMs();
+        String delay = delayValue != null? String.valueOf(delayValue): "N/A";
 
         // offset in ms
         output += "<p><b>" + context.getString(R.string.detailed_query_computed_offset)
@@ -171,10 +170,11 @@ public class NtpSyncUtils {
      * Queries NTP server to get details
      * 
      * @param ntpServerHostname
-     * @param elapsedTime: if true, calculate offset for elapsed real time
-     *                     if false, calculate offset for system time
+     * @param elapsedTime: if true, calculate details for elapsed real time
+     *                     if false, calculate details for system time
+     * @return Result as TimeInfo
      */
-    public static TimeInfo detailedQuerySystemTime(String ntpServerHostname) throws IOException,
+    public static TimeInfo query(String ntpServerHostname, boolean elapsedTime) throws IOException,
             SocketException {
         NTPUDPClient client = new NTPUDPClient();
         // We want to timeout if a response takes longer than 10 seconds
@@ -186,7 +186,7 @@ public class NtpSyncUtils {
 
             InetAddress hostAddr = InetAddress.getByName(ntpServerHostname);
             Log.d(Constants.TAG, "> " + hostAddr.getHostName() + "/" + hostAddr.getHostAddress());
-            info = client.getTime(hostAddr, false);
+            info = client.getTime(hostAddr, elapsedTime);
         } finally {
             client.close();
         }
@@ -195,61 +195,38 @@ public class NtpSyncUtils {
     }
 
     /**
-     * Queries NTP server using UDP to get offset
-     * 
+     * Queries NTP server to get details
+     *
      * @param ntpServerHostname
-     * @param elapsedTime: if true, calculate offset for elapsed real time
-     *                     if false, calculate offset for system time
-     * @return offset in nanoseconds
+     * @return Result as TimeInfo
      * @throws IOException
      *             , SocketException
      */
-    public static double query(String ntpServerHostname, boolean elapsedTime) throws IOException, SocketException {
-        NTPUDPClient client = new NTPUDPClient();
-        // We want to timeout if a response takes longer than 10 seconds
-        client.setDefaultTimeout(10000);
-
-        TimeInfo info = null;
-        try {
-            client.open();
-
-            InetAddress hostAddr = InetAddress.getByName(ntpServerHostname);
-            Log.d(Constants.TAG, "Trying to get time from " + hostAddr.getHostName() + "/"
-                    + hostAddr.getHostAddress());
-
-            info = client.getTime(hostAddr, elapsedTime);
-        } finally {
-            client.close();
-        }
+    public static TimeInfo querySystemTime(String ntpServerHostname) throws IOException,
+            SocketException {
+        TimeInfo info = query(ntpServerHostname, false);
 
         // compute offset/delay if not already done
         info.computeDetails();
 
-        return info.getOffset();
+        return info;
     }
 
     /**
-     * Queries NTP server using UDP to get offset from system clock
+     * Queries NTP server to get details
      *
      * @param ntpServerHostname
-     * @return offset in milliseconds
+     * @return Result as TimeInfo
      * @throws IOException
      *             , SocketException
      */
-    public static long querySystemTime(String ntpServerHostname) throws IOException, SocketException {
-        double ns = query(ntpServerHostname, false);
-        return TimeUnit.MILLISECONDS.convert(Math.round(ns), TimeUnit.NANOSECONDS);
-    }
+    public static TimeInfo queryElapsedRealTime(String ntpServerHostname) throws IOException,
+            SocketException {
+        TimeInfo info = query(ntpServerHostname, true);
 
-    /**
-     * Queries NTP server using UDP to get offset from elapsed real time clock
-     *
-     * @param ntpServerHostname
-     * @return offset in nanoseconds
-     * @throws IOException
-     *             , SocketException
-     */
-    public static double queryElapsedRealTime(String ntpServerHostname) throws IOException, SocketException {
-        return query(ntpServerHostname, true);
+        // compute offset/delay if not already done
+        info.computeDetails();
+
+        return info;
     }
 }

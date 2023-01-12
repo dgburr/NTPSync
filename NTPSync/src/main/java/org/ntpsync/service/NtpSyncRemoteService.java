@@ -25,6 +25,7 @@ import org.ntpsync.util.Log;
 import org.ntpsync.util.NtpSyncUtils;
 import org.ntpsync.util.PreferenceHelper;
 import org.ntpsync.util.Utils;
+import org.apache.commons.net.ntp.TimeInfo;
 
 import android.app.Service;
 import android.content.Intent;
@@ -37,9 +38,6 @@ import android.os.RemoteException;
  * This class exposes the remote service to the client
  */
 public class NtpSyncRemoteService extends Service {
-
-    public static final String OUTPUT_OFFSET = "offset";
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -73,13 +71,14 @@ public class NtpSyncRemoteService extends Service {
 
             int returnMessage;
             try {
-                long offset = NtpSyncUtils.querySystemTime(ntpHostname);
+                TimeInfo info = NtpSyncUtils.querySystemTime(ntpHostname);
 
-                output.putLong(OUTPUT_OFFSET, offset);
+                output.putLong(INtpSyncRemoteService.KEY_OFFSET, info.getOffsetMs());
+                output.putLong(INtpSyncRemoteService.KEY_DELAY, info.getDelayMs());
 
-                returnMessage = NtpSyncService.RETURN_OKAY;
+                returnMessage = INtpSyncRemoteService.RETURN_OKAY;
             } catch (Exception e) {
-                returnMessage = NtpSyncService.RETURN_SERVER_TIMEOUT;
+                returnMessage = INtpSyncRemoteService.RETURN_SERVER_TIMEOUT;
             }
 
             return returnMessage;
@@ -99,13 +98,14 @@ public class NtpSyncRemoteService extends Service {
 
             int returnMessage;
             try {
-                double offset = NtpSyncUtils.queryElapsedRealTime(ntpHostname);
+                TimeInfo info = NtpSyncUtils.queryElapsedRealTime(ntpHostname);
 
-                output.putDouble(OUTPUT_OFFSET, offset);
+                output.putDouble(INtpSyncRemoteService.KEY_OFFSET, info.getOffsetNs());
+                output.putDouble(INtpSyncRemoteService.KEY_DELAY, info.getDelayNs());
 
-                returnMessage = NtpSyncService.RETURN_OKAY;
+                returnMessage = INtpSyncRemoteService.RETURN_OKAY;
             } catch (Exception e) {
-                returnMessage = NtpSyncService.RETURN_SERVER_TIMEOUT;
+                returnMessage = INtpSyncRemoteService.RETURN_SERVER_TIMEOUT;
             }
 
             return returnMessage;
@@ -125,13 +125,15 @@ public class NtpSyncRemoteService extends Service {
 
             int returnMessage;
             try {
-                long offset = NtpSyncUtils.querySystemTime(ntpHostname);
+                TimeInfo info = NtpSyncUtils.querySystemTime(ntpHostname);
+                long offset = info.getOffsetMs();
 
-                output.putLong(OUTPUT_OFFSET, offset);
+                output.putLong(INtpSyncRemoteService.KEY_OFFSET, offset);
+                output.putLong(INtpSyncRemoteService.KEY_DELAY, info.getDelayMs());
 
                 returnMessage = Utils.setTime(offset);
             } catch (Exception e) {
-                returnMessage = NtpSyncService.RETURN_SERVER_TIMEOUT;
+                returnMessage = INtpSyncRemoteService.RETURN_SERVER_TIMEOUT;
             }
 
             return returnMessage;

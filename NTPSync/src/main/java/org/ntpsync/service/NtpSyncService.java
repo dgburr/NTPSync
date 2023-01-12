@@ -150,7 +150,8 @@ public class NtpSyncService extends IntentService {
             // return time to ui
             Bundle messageData = new Bundle();
             try {
-                offset = NtpSyncUtils.querySystemTime(ntpHostname);
+                offset = NtpSyncUtils.querySystemTime(ntpHostname).getOffsetMs();
+
                 returnMessage = RETURN_OKAY;
 
                 // calculate new time
@@ -184,7 +185,7 @@ public class NtpSyncService extends IntentService {
             String output = null;
             Bundle messageDataDetailedQuery = null;
             try {
-                TimeInfo info = NtpSyncUtils.detailedQuerySystemTime(ntpHostname);
+                TimeInfo info = NtpSyncUtils.query(ntpHostname, false);
 
                 output = NtpSyncUtils.processResponse(info, this);
 
