@@ -45,6 +45,7 @@ import java.util.TimeZone;
 public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
 {
     public static final long NS_PER_MS = 1000000;
+    public static final long MS_PER_SEC = 1000;
     public static final long NS_PER_SEC = 1000000000;
     private static final long serialVersionUID = 8139806907588338737L;
 
@@ -192,7 +193,7 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
         long fraction = ntpTimeValue & 0xffffffffL;             // low-order 32-bits
 
         // Use round-off on fractional part to preserve going to lower precision
-        fraction = Math.round(1000D * fraction / 0x100000000L);
+        fraction = Math.round((double)MS_PER_SEC / 0x100000000L * fraction);
 
         /*
          * If the most significant bit (MSB) on the seconds field is set we use
@@ -206,10 +207,10 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
         long msb = seconds & 0x80000000L;
         if (msb == 0) {
             // use base: 7-Feb-2036 @ 06:28:16 UTC
-            return msb0baseTimeMs + (seconds * 1000) + fraction;
+            return msb0baseTimeMs + (seconds * MS_PER_SEC) + fraction;
         } else {
             // use base: 1-Jan-1900 @ 01:00:00 UTC
-            return msb1baseTimeMs + (seconds * 1000) + fraction;
+            return msb1baseTimeMs + (seconds * MS_PER_SEC) + fraction;
         }
     }
 
@@ -226,7 +227,7 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
         long fraction = ntpTimeValue & 0xffffffffL;             // low-order 32-bits
 
         // Use round-off on fractional part to preserve going to lower precision
-        fraction = Math.round((double)NS_PER_SEC * fraction / 0x100000000L);
+        fraction = Math.round((double)NS_PER_SEC / 0x100000000L * fraction);
 
         /*
          * If the most significant bit (MSB) on the seconds field is set we use
@@ -328,8 +329,8 @@ public class TimeStamp implements java.io.Serializable, Comparable<TimeStamp>
             baseTime = t - msb0baseTimeMs;
         }
 
-        long seconds = baseTime / 1000;
-        long fraction = ((baseTime % 1000) * 0x100000000L) / 1000;
+        long seconds = baseTime / MS_PER_SEC;
+        long fraction = ((baseTime % MS_PER_SEC) * 0x100000000L) / MS_PER_SEC;
 
         if (useBase1) {
             seconds |= 0x80000000L; // set high-order bit if msb1baseTimeMs 1900 used
