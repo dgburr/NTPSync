@@ -20,6 +20,7 @@ package org.apache.commons.net.ntp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import android.os.SystemClock;
 
 import org.apache.commons.net.DatagramSocketClient;
 
@@ -86,7 +87,7 @@ public final class NTPUDPClient extends DatagramSocketClient
          */
         TimeStamp now;
         if (elapsedTime) {
-            now = TimeStamp.getNtpTimeFromNanos(System.nanoTime());
+            now = TimeStamp.getNtpTimeFromNanos(SystemClock.elapsedRealtimeNanos());
         } else {
             now = TimeStamp.getNtpTimeFromMillis(System.currentTimeMillis());
         }
@@ -100,7 +101,7 @@ public final class NTPUDPClient extends DatagramSocketClient
 
         TimeStamp returnTime;
         if (elapsedTime) {
-            returnTime = TimeStamp.getNtpTimeFromNanos(System.nanoTime());
+            returnTime = TimeStamp.getNtpTimeFromNanos(SystemClock.elapsedRealtimeNanos());
         } else {
             returnTime = TimeStamp.getNtpTimeFromMillis(System.currentTimeMillis());
         }
